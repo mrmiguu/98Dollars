@@ -38,7 +38,7 @@ test("bi-directional IO", async () => {
   ])
 })
 
-test("reusable bi-directional IO", async () => {
+test("reusable IO", async () => {
   return Promise.all([
     (async () => {
       const abc = await $98.Msg
@@ -62,6 +62,69 @@ test("reusable bi-directional IO", async () => {
 
       const m = await $98.Msg
       expect(m).toBe(789)
+    })(),
+  ])
+})
+
+test("passing state back-and-forth", async () => {
+  return Promise.all([
+    (async () => {
+      $98.A = 1
+      let count = await $98.B
+      expect(count).toBe(2)
+    })(),
+
+    (async () => {
+      let count = await $98.A
+      expect(count).toBe(1)
+      $98.B = count + 1
+    })(),
+  ])
+})
+
+test("passing a lot of state", async () => {
+  return Promise.all([
+    (async () => {
+      let b
+      $98.A = 1
+      for (let i = 1; i <= 10; i++) {
+        b = await $98.B
+        $98.A = b + 1
+      }
+      expect(b).toBe(10)
+    })(),
+
+    (async () => {
+      let a
+      for (let i = 1; i <= 10; i++) {
+        a = await $98.A
+        $98.B = a + 1
+      }
+      expect(a).toBe(9)
+    })(),
+  ])
+})
+
+test("passing a ton of state", async () => {
+  const n = 100
+  return Promise.all([
+    (async () => {
+      let d
+      $98.C = 1
+      for (let i = 1; i <= n; i++) {
+        d = await $98.D
+        $98.C = d + 1
+      }
+      expect(d).toBe(n)
+    })(),
+
+    (async () => {
+      let c
+      for (let i = 1; i <= n; i++) {
+        c = await $98.C
+        $98.D = c + 1
+      }
+      expect(c).toBe(n - 1)
     })(),
   ])
 })
