@@ -1,38 +1,53 @@
-import $98 from "."
+import $99 from "."
 
 test("basic IO", async () => {
-  $98.Test = "abc"
-  const abc = await $98.Test
-
+  $99.Abc("abc")
+  const abc = await $99.Abc()
   expect(abc).toBe("abc")
 })
 
 test("asynchronous IO", async () => {
   return Promise.all([
     (async () => {
-      const xyz = await $98.Xyz
+      const xyz = await $99.NotAbc()
       expect(xyz).toBe("xyz")
     })(),
 
     (async () => {
-      $98.Xyz = "xyz"
+      await $99.NotAbc("xyz")
     })(),
   ])
 })
 
-test("bi-directional IO", async () => {
+test("forced asynchronous IO", async () => {
   return Promise.all([
     (async () => {
-      const abc = await $98.Msg
-      expect(abc).toBe("abc")
-
-      $98.Msg = 123
+      await $99.Hi("hi")
+      const notHi = await $99.Hi()
+      expect(notHi).not.toBe("hi")
     })(),
 
     (async () => {
-      $98.Msg = "abc"
+      const hi = await $99.Hi()
+      expect(hi).toBe("hi")
+      await $99.Hi("not hi")
+    })(),
+  ])
+})
 
-      const n = await $98.Msg
+test("dynamically-typed IO", async () => {
+  return Promise.all([
+    (async () => {
+      const abc = await $99.TestBoth()
+      expect(abc).toBe("abc")
+
+      await $99.TestBoth(123)
+    })(),
+
+    (async () => {
+      await $99.TestBoth("abc")
+
+      const n = await $99.TestBoth()
       expect(n).toBe(123)
     })(),
   ])
@@ -41,90 +56,97 @@ test("bi-directional IO", async () => {
 test("reusable IO", async () => {
   return Promise.all([
     (async () => {
-      const abc = await $98.Msg
+      const abc = await $99.FreshMsg()
       expect(abc).toBe("abc")
 
-      $98.Msg = 123
+      await $99.FreshMsg(123)
 
-      const xyz = await $98.Msg
+      const xyz = await $99.FreshMsg()
       expect(xyz).toBe("xyz")
 
-      $98.Msg = 789
+      await $99.FreshMsg(789)
     })(),
 
     (async () => {
-      $98.Msg = "abc"
+      await $99.FreshMsg("abc")
 
-      const n = await $98.Msg
+      const n = await $99.FreshMsg()
       expect(n).toBe(123)
 
-      $98.Msg = "xyz"
+      await $99.FreshMsg("xyz")
 
-      const m = await $98.Msg
+      const m = await $99.FreshMsg()
       expect(m).toBe(789)
     })(),
   ])
 })
 
-test("passing state back-and-forth", async () => {
+test("passing state separately", async () => {
   return Promise.all([
     (async () => {
-      $98.A = 1
-      let count = await $98.B
+      await $99.A(1)
+
+      let count = await $99.B()
       expect(count).toBe(2)
     })(),
 
     (async () => {
-      let count = await $98.A
+      let count = await $99.A()
       expect(count).toBe(1)
-      $98.B = count + 1
+
+      await $99.B(count + 1)
+    })(),
+  ])
+})
+
+test("passing state through one channel", async () => {
+  return Promise.all([
+    (async () => {
+      await $99.One(1)
+
+      let count = await $99.One()
+      expect(count).toBe(2)
+    })(),
+
+    (async () => {
+      let count = await $99.One()
+      expect(count).toBe(1)
+
+      await $99.One(count + 1)
     })(),
   ])
 })
 
 test("passing a lot of state", async () => {
+  const n = 100
+
   return Promise.all([
     (async () => {
       let b
-      $98.A = 1
-      for (let i = 1; i <= 10; i++) {
-        b = await $98.B
-        $98.A = b + 1
+
+      await $99.A(1)
+
+      for (let i = 1; i <= n; i++) {
+        b = await $99.B()
+        expect(b).toBe(2 * i)
+
+        if (i < n) {
+          await $99.A(b + 1)
+        }
       }
-      expect(b).toBe(10)
+      expect(b).toBe(2 * n)
     })(),
 
     (async () => {
       let a
-      for (let i = 1; i <= 10; i++) {
-        a = await $98.A
-        $98.B = a + 1
-      }
-      expect(a).toBe(9)
-    })(),
-  ])
-})
 
-test("passing a ton of state", async () => {
-  const n = 100
-  return Promise.all([
-    (async () => {
-      let d
-      $98.C = 1
       for (let i = 1; i <= n; i++) {
-        d = await $98.D
-        $98.C = d + 1
-      }
-      expect(d).toBe(n)
-    })(),
+        a = await $99.A()
+        expect(a).toBe(2 * i - 1)
 
-    (async () => {
-      let c
-      for (let i = 1; i <= n; i++) {
-        c = await $98.C
-        $98.D = c + 1
+        await $99.B(a + 1)
       }
-      expect(c).toBe(n - 1)
+      expect(a).toBe(2 * n - 1)
     })(),
   ])
 })
