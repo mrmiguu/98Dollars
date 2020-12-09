@@ -6,6 +6,18 @@ test("basic IO", async () => {
   expect(abc).toBe("abc")
 })
 
+test("blocking input", async () => {
+  const abcOut = jest.fn()
+  $99.Abc("abc").then(abcOut)
+  expect(abcOut).not.toHaveBeenCalled()
+})
+
+test("blocking output", async () => {
+  const abcIn = jest.fn()
+  $99.Abc().then(abcIn)
+  expect(abcIn).not.toHaveBeenCalled()
+})
+
 test("asynchronous IO", async () => {
   return Promise.all([
     (async () => {
