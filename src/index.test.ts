@@ -6,6 +6,15 @@ test("basic IO", async () => {
   expect(abc).toBe("abc")
 })
 
+test("basic IO with keyed path", async () => {
+  const path1 = "this is some path"
+
+  $99[path1]("my value")
+  const myValue = await $99[path1]()
+
+  expect(myValue).toBe("my value")
+})
+
 test("blocking input", async () => {
   const abcOut = jest.fn()
   $99.Abc("abc").then(abcOut)
@@ -27,6 +36,25 @@ test("asynchronous IO", async () => {
 
     (async () => {
       await $99.NotAbc("xyz")
+    })(),
+  ])
+})
+
+test("callback-like behavior", async () => {
+  return Promise.all([
+    (async () => {
+      const one = await $99.Callback1()
+      const two = await $99.Callback1()
+      const three = await $99.Callback1()
+      expect(one).toBe(1)
+      expect(two).toBe(2)
+      expect(three).toBe(3)
+    })(),
+
+    (async () => {
+      await $99.Callback1(1)
+      await $99.Callback1(2)
+      await $99.Callback1(3)
     })(),
   ])
 })
